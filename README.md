@@ -4,4 +4,4 @@ This repo contains a scripts that scrapes the Kobo website looking for ebook pro
 It is a sample project written in Python2 using BeautifulSoup
 
 ## Usage
-    python kobo-scraper <email> <password>
+    python kobo-scraper.py <email> <password>
