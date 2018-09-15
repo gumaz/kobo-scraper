@@ -1,26 +1,80 @@
-import urllib2
+import sys, urllib2, smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from bs4 import BeautifulSoup
 
 
-def main():
-    # specify the url
-    main_page = "https://www.kobo.com/it/it/p/OfferteDelMese"
+class Book:
+    def __init__(self, title, author, price):
+        self.title = title
+        self.author = author
+        self.price = price
+
+    def details(self):
+        return self.title + '\n' + self.author + '\n' + self.price + '\n'
+
+
+# get the books of the month
+def get_monthly_books(url):
+    book_list = []
 
     # query the website and return the html to the variable page
-    page = urllib2.urlopen(main_page)
+    page = urllib2.urlopen(url)
 
     # parse the html using beautiful soup and store in variable `soup`
     html = BeautifulSoup(page, "html.parser")
 
-    #print soup
-
-    books = html.findAll('div', attrs={'class':'book-details'})
+    # get the books with author and price
+    books = html.findAll('div', attrs={'class': 'book-details'})
     for book in books:
-        title = book.find('p', attrs={'class':'title product-field'}).text.strip()
-        author = book.find('p', attrs={'class':'attribution product-field contributor-list'}).text.strip()
-        price = book.find('p', attrs={'class':'product-field price'}).text.strip()
+        title = book.find('p', attrs={'class': 'title product-field'}).text.strip()
+        author = book.find('p', attrs={'class': 'attribution product-field contributor-list'}).text.strip()
+        price = book.find('p', attrs={'class': 'product-field price'}).text.strip()
 
-        print title + '\n' + author + '\n' + price + '\n'
+        book_list.append(Book(title, author, price))
+
+    return book_list
+
+
+# get the book of the day TODO
+def get_daily_book(url):
+    book = Book("Title", "Author", "0,00")
+    return book
+
+
+# send myself an email with the list of the books
+def send_email(email, password, books):
+
+    # prepare the email
+    msg = MIMEMultipart()
+    msg['From'] = email
+    msg['To'] = email
+    msg['Subject'] = "Kobo: ebooks in offerta"
+    body = '\n'.join(b.details() for b in books)
+    msg.attach(MIMEText(body.encode('utf-8'), 'plain'))
+
+    # send the email
+    server = smtplib.SMTP("smtp.live.com", 587)
+    server.ehlo()
+    server.starttls()
+    server.ehlo()
+    server.login(email, password)
+    server.sendmail(email, email, msg.as_string())
+
+    print("Email sent to " + email)
+
+
+def main():
+    mm = get_monthly_books("https://www.kobo.com/it/it/p/OfferteDelMese")
+    dd = get_daily_book("https://www.kobo.com/it")
+    books = [dd] + mm  # make the book of the day the first of the list
+
+    print '\n'.join(b.details() for b in books)
+
+    if len(sys.argv) == 3:
+        email = sys.argv[1]
+        passw = sys.argv[2]
+        send_email(email, passw, books)
 
 
 if __name__ == "__main__":
