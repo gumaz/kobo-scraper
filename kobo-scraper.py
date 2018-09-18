@@ -5,13 +5,14 @@ from bs4 import BeautifulSoup
 
 
 class Book:
-    def __init__(self, title, author, price):
+    def __init__(self, title, author, price, summary):
         self.title = title
         self.author = author
         self.price = price
+        self.summary = summary
 
     def details(self):
-        return self.title + '\n' + self.author + '\n' + self.price + '\n'
+        return self.title + '\n' + self.author + '\n' + self.price + '\n' + self.summary + '\n'
 
 
 # get the books of the month
@@ -31,14 +32,33 @@ def get_monthly_books(url):
         author = book.find('p', attrs={'class': 'attribution product-field contributor-list'}).text.strip()
         price = book.find('p', attrs={'class': 'product-field price'}).text.strip()
 
-        book_list.append(Book(title, author, price))
+        book_list.append(Book(title, author, price, ''))
 
     return book_list
 
 
 # get the book of the day TODO
 def get_daily_book(url):
-    book = Book("Title", "Author", "0,00")
+    
+    # query the website and return the html to the variable page
+    page = urllib2.urlopen(url)
+
+    # parse the html using beautiful soup and store in variable `soup`
+    html = BeautifulSoup(page, "html.parser")
+    
+    # find highlighted books in the page
+    books = html.findAll('div', attrs={'class':'secondary-heading widget-title'})
+    
+    
+    for book in books:
+        if book.text == 'Offerta del giorno':
+            title = book.findNext('div', attrs={'class':'widget-text-description'}).h1.text.strip()
+            author = book.findNext('span', attrs={'class':'visible-contributors'}).text.strip()
+            price = book.findNext('div', attrs={'class':'pricing regular-price'}).text.strip()
+            summary = book.findNext('div', attrs={'class':'widget-text-description'}).p.text.strip()
+            
+    book = Book(title, author, price, summary)
+    
     return book
 
 
